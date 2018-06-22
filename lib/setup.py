@@ -5,6 +5,9 @@ setup(
     version='0.0.1',
     description = 'ATEC Anti Fraud Lib',
     author ='2y2sp',
-    py_modules=['atecml.data','atecml.visual']
+    py_modules=['atecml.data',
+                'atecml.fa',
+                'atecml.visual',
+               ]
 )
 

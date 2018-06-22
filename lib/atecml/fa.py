@@ -1,95 +1,51 @@
 import matplotlib
+import pandas as pd
 import matplotlib.pyplot as plt
 import matplotlib.gridspec as gridspec
-
-def plot_time_series_chart_median(describe_df,feature_name):
-    f,(ax1,ax2)= plt.subplots(2,1,sharex=True,figsize=(18,12))
-    #a[feature_name][stats].unstack()[0].plot(ax=ax1)
-    ax1.set_title('normal')
-    ax1_mean = describe_df[feature_name]['50%'].unstack()[0]
-    ax1_low = describe_df[feature_name]['25%'].unstack()[0]
-    ax1_high = describe_df[feature_name]['75%'].unstack()[0]
-    ax1.plot(ax1_mean.index,ax1_mean,'k')
-    ax1.fill_between(ax1_mean.index, ax1_low, ax1_high, color='g', alpha=0.2)
-    
-    
-    ax2.set_title('fruad')
-    ax2_mean = describe_df[feature_name]['50%'].unstack()[0]
-    ax2_low = describe_df[feature_name]['25%'].unstack()[0]
-    ax2_high = describe_df[feature_name]['75%'].unstack()[0]
-    ax2.plot(ax2_mean.index,ax2_mean,'k')
-    ax2.fill_between(ax2_mean.index, ax2_low, ax2_high, color='r', alpha=0.2)
-    
-    #a[feature_name][stats].unstack()[1].plot(ax=ax2)
-    #ax2.set_title('fraud')
-    plt.xlabel('Time (in Date)')
-    plt.ylabel( 'Feature    '+feature_name+'    [ stats_by: 25%-50%-75% ]')
-    plt.show()
-    
-def plot_time_series_chart_line(describe_df,feature_name,stats):
-    f,(ax0,ax1,ax2)= plt.subplots(3,1,sharex=True,figsize=(18,12))
-    #a[feature_name][stats].unstack()[0].plot(ax=ax1)
-
-    ax0.set_title('unknown')
-    ax0_value = describe_df[feature_name][stats].unstack()[-1]
-    ax0.plot(ax0_value.index,ax0_value,'b')
-
-    ax1.set_title('normal')
-    ax1_value = describe_df[feature_name][stats].unstack()[0]
-    ax1.plot(ax1_value.index,ax1_value,'g')
-    
-    
-    ax2.set_title('fruad')
-    ax2_value = describe_df[feature_name][stats].unstack()[1]
-    ax2.plot(ax2_value.index,ax2_value,'r')
-
-    plt.xlabel('Time (in Date)')
-    plt.ylabel( 'Feature    '+feature_name+'    [ stats_by: '+stats+']')
-    plt.show()
-
-def plot_time_series_chart_boll_band(describe_df,feature_name):
-    f,(ax1,ax2)= plt.subplots(2,1,sharex=True,figsize=(18,12))
-    #a[feature_name][stats].unstack()[0].plot(ax=ax1)
-    ax1.set_title('normal')
-    ax1_mean = describe_df[feature_name]['mean'].unstack()[0]
-    ax1_std = describe_df[feature_name]['std'].unstack()[0]
-    ax1.plot(ax1_mean.index,ax1_mean,'k')
-    ax1.fill_between(ax1_mean.index, ax1_mean-2*ax1_std, ax1_mean+2*ax1_std, color='g', alpha=0.2)
-
-    ax2.set_title('fruad')
-    ax2_mean = describe_df[feature_name]['mean'].unstack()[1]
-    ax2_std = describe_df[feature_name]['std'].unstack()[1]
-    ax2.plot(ax1_mean.index,ax1_mean,'k')
-    ax2.fill_between(ax2_mean.index, ax2_mean-2*ax2_std, ax2_mean+2*ax2_std, color='r', alpha=0.2)
-    
-    #a[feature_name][stats].unstack()[1].plot(ax=ax2)
-    #ax2.set_title('fraud')
-    plt.xlabel('Time (in Date)')
-    plt.ylabel( 'Feature    '+feature_name+'    [ stats_by: mean/std]')
-    plot.show()
-    
-    
-def plot_hist(data_set,feature_name):
-    df= data_set[[feature_name,'label']].dropna()
-    plt.subplots(1,1,figsize=(18,6))
-    plt.hist(df[feature_name][df['label']==0],bins=30,color='#b2d235',alpha = 0.7, density=True)
-    plt.hist(df[feature_name][df['label']==1],bins=30,color='#002299',alpha = 0.7, density=True)
-    plt.yscale('log')
-    plt.title('histogram of feature: ' + str(feature_name))
-    plot.show()
+import atecml.data 
+import os
 
 
-def Feature_Analytics_Summary(data_set,describe_df,feature_name):
+data_path = atecml.data.data_path
+SAVE_PATH = atecml.data.system_root_path + 'feature_analytics/'
+
+
+FEATURE_DESCRIPTION = data_path + 'fa_description'
+output_dpi = 300
+
+
+def feature_description(mode="train",groupby="date"):
+    if (groupby == "date"):
+        group = ['date']
+    else:
+        group = ['date','label']
+    if (mode == "train"):
+        df = atecml.data.load_train()
+        PICKLE_PATH = FEATURE_DESCRIPTION + '.train' + groupby +'.dat'
+    else:
+        df = atecml.data.load_test()
+        PICKLE_PATH = FEATURE_DESCRIPTION + '.test'+ groupby +'.dat'
+        
+    if (os.path.exists(PICKLE_PATH)):
+        group_df = pd.read_pickle(PICKLE_PATH)
+    else:
+        group_df = df.groupby(group).describe()
+        group_df.to_pickle(PICKLE_PATH)
+    return group_df
+      
+
+
+def summary_traindf(train_df,describe_df,feature_name):
     """
     Matplotlib说实话不方便也懒得学，更多的时候还是用plotly和bokeh
     但是bokeh采用HTML渲染，图多了后浏览器特别卡
     这次只是时间紧，懒得多研究，就这样ugly的弄一起好了
     """
-    chart_name = 'Feature_Analytics__'+feature_name
-    export_filename = '../feature_analytics/' + chart_name +'.png'
+    chart_name = 'Feature_Analytics__TRAIN_DF_Summary__'+feature_name
+    export_filename = SAVE_PATH + chart_name +'.png'
 
     f = plt.figure(figsize=(20,4*7))
-    df= data_set[[feature_name,'label']].dropna()
+    df= train_df[[feature_name,'label']].dropna()
 
     ax0 = f.add_subplot(721) #总行数、总列数、子图位置
     ax0.set_title(chart_name)
@@ -99,7 +55,7 @@ def Feature_Analytics_Summary(data_set,describe_df,feature_name):
     ax0.set_xlabel('histogram of: ' + str(feature_name))
     ax0.set_autoscaley_on(False)
 
-    ax1 = f.add_subplot(722) #总行数、总列数、子图位置
+    ax1 = f.add_subplot(722) 
     ax1.set_title(chart_name)
     ax1.hist(df[feature_name][df['label']==0],bins=30,color='#b2d235',alpha = 0.5, density=True)
     ax1.hist(df[feature_name][df['label']==1],bins=30,color='#002299',alpha = 0.5, density=True)
@@ -157,28 +113,26 @@ def Feature_Analytics_Summary(data_set,describe_df,feature_name):
     plt.savefig(export_filename,dpi=100, pad_inches = 0)
     plt.show()
 
-    
-
-def Feature_Analytics_Summary_For_TestData(data_set,describe_df,feature_name):
+def summary_testdf(test_df,describe_df,feature_name):
     """
     Matplotlib说实话不方便也懒得学，更多的时候还是用plotly和bokeh
     但是bokeh采用HTML渲染，图多了后浏览器特别卡
     这次只是时间紧，懒得多研究，就这样ugly的弄一起好了
     """
-    chart_name = 'Prediction_Data_Feature_Analytics__'+feature_name
-    export_filename = '../feature_analytics/' + chart_name +'.png'
+    chart_name = 'Feature_Analytics__TEST_DF_Summary__'+feature_name
+    export_filename = SAVE_PATH + chart_name +'.png'
 
     f = plt.figure(figsize=(20,5*4))
-    df= data_set[feature_name].dropna()
+    df= test_df[feature_name].dropna()
 
-    ax0 = f.add_subplot(421) #总行数、总列数、子图位置
+    ax0 = f.add_subplot(421) 
     ax0.set_title(chart_name)
     ax0.hist(df,bins=30,color='#b2d235',alpha = 0.5)
     ax0.set_yscale('log')
     ax0.set_xlabel('histogram of: ' + str(feature_name))
     ax0.set_autoscaley_on(False)
 
-    ax1 = f.add_subplot(422) #总行数、总列数、子图位置
+    ax1 = f.add_subplot(422) 
     ax1.set_title(chart_name)
     ax1.hist(df,bins=30,color='#b2d235',alpha = 0.5, density=True)
     ax1.set_yscale('log')
@@ -212,21 +166,27 @@ def Feature_Analytics_Summary_For_TestData(data_set,describe_df,feature_name):
     plt.margins(0,0)  
     plt.savefig(export_filename,dpi=100, pad_inches = 0)
     plt.show()
+
+
     
-def FA_Summary(data_set,describe_df,predict_df,predict_discribe,feature_name,savefig=True):
+def compare_train_test(train_df,train_describe,test_df,test_describe,feature_name,savefig=True):
     """
     Matplotlib说实话不方便也懒得学，更多的时候还是用plotly和bokeh
     但是bokeh采用HTML渲染，图多了后浏览器特别卡
     这次只是时间紧，懒得多研究，就这样ugly的弄一起好了
     """
-    chart_name = 'Feature_Analytics__'+feature_name
-    export_filename = '../feature_analytics/' + chart_name +'.png'
+    chart_name = 'Feature_Analytics__TRAIN_TEST_Compare__'+feature_name
+    export_filename = SAVE_PATH + chart_name +'.png'
+    
 
     f = plt.figure(figsize=(37,4*7))
-    df= data_set[[feature_name,'label']].dropna()
-    df1= predict_df[[feature_name]].dropna()
+    df= train_df[[feature_name,'label']].dropna()
+    df1= test_df[[feature_name]].dropna()
+    
+    describe_df = train_describe
+    predict_discribe =test_describe
 
-    ax0 = f.add_subplot(741) #总行数、总列数、子图位置
+    ax0 = f.add_subplot(741) 
     ax0.set_title(chart_name+"[Train]")
     ax0.hist(df[feature_name][df['label']==0],bins=30,color='#b2d235',alpha = 0.5)
     ax0.hist(df[feature_name][df['label']==1],bins=30,color='#002299',alpha = 0.5)
@@ -234,7 +194,7 @@ def FA_Summary(data_set,describe_df,predict_df,predict_discribe,feature_name,sav
     ax0.set_xlabel('histogram of: ' + str(feature_name))
     ax0.set_autoscaley_on(False)
 
-    ax1 = f.add_subplot(742) #总行数、总列数、子图位置
+    ax1 = f.add_subplot(742) 
     ax1.hist(df[feature_name][df['label']==0],bins=30,color='#b2d235',alpha = 0.5, density=True)
     ax1.hist(df[feature_name][df['label']==1],bins=30,color='#002299',alpha = 0.5, density=True)
     ax1.set_yscale('log')
@@ -242,14 +202,14 @@ def FA_Summary(data_set,describe_df,predict_df,predict_discribe,feature_name,sav
     ax1.set_autoscaley_on(False)
 
 
-    bx0 = f.add_subplot(743) #总行数、总列数、子图位置
+    bx0 = f.add_subplot(743) 
     bx0.set_title(chart_name+"[Test]")
     bx0.hist(df1[feature_name],bins=30,color='#b2d235',alpha = 0.5)
     bx0.set_yscale('log')
     bx0.set_xlabel('histogram of: ' + str(feature_name))
     bx0.set_autoscaley_on(False)
 
-    bx1 = f.add_subplot(744) #总行数、总列数、子图位置
+    bx1 = f.add_subplot(744) 
     bx1.hist(df1[feature_name],bins=30,color='#b2d235',alpha = 0.5, density=True)
     bx1.set_yscale('log')
     bx1.set_xlabel('[Density]histogram of: ' + str(feature_name))
@@ -292,8 +252,7 @@ def FA_Summary(data_set,describe_df,predict_df,predict_discribe,feature_name,sav
     bx4_high = predict_discribe[feature_name]['75%']
     bx4.plot(bx4_mean.index,bx4_mean,'k')
     bx4.fill_between(bx4_mean.index, bx4_low, bx4_high, color='b', alpha=0.2)
-    bx4.set_ylabel( feature_name+'    [ stats_by: 25%-50%-75% ]')
-    
+    bx4.set_ylabel( feature_name+'    [ stats_by: 25%-50%-75% ]')   
     
     ax5 = f.add_subplot(729)
     ax5.set_title('fruad[quad]')
@@ -331,17 +290,19 @@ def FA_Summary(data_set,describe_df,predict_df,predict_discribe,feature_name,sav
     plt.margins(0,0)  
     plt.tight_layout()
     if (savefig):
-        plt.savefig(export_filename,dpi=80, pad_inches = 0)
-    plt.show()
+        plt.savefig(export_filename,dpi=output_dpi, pad_inches = 0)
+    plt.show()    
+    
 
-def FA_Compare(data_set,describe_df,data_set1,describe_df1,feature_name,savefig=True):
+def compare_train(data_set,describe_df,data_set1,describe_df1,feature_name,savefig=True):
     """
     Matplotlib说实话不方便也懒得学，更多的时候还是用plotly和bokeh
     但是bokeh采用HTML渲染，图多了后浏览器特别卡
     这次只是时间紧，懒得多研究，就这样ugly的弄一起好了
     """
-    chart_name = 'Feature_Analytics__Compare'+feature_name
-    export_filename = '../feature_analytics/' + chart_name +'.png'
+    chart_name = 'Feature_Analytics__Compare_Trained_AB__'+feature_name
+    export_filename = SAVE_PATH + chart_name +'.png'
+
 
     f = plt.figure(figsize=(37,4*7))
     df= data_set[[feature_name,'label']].dropna()
@@ -477,7 +438,5 @@ def FA_Compare(data_set,describe_df,data_set1,describe_df1,feature_name,savefig=
     plt.margins(0,0)  
     plt.tight_layout()
     if (savefig):
-        plt.savefig(export_filename,dpi=80, pad_inches = 0)
-    plt.show()
-
-
+        plt.savefig(export_filename,dpi=output_dpi, pad_inches = 0)
+    plt.show()    
