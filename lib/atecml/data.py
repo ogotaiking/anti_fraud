@@ -77,16 +77,22 @@ def feature_columns(df):
     result_list = [x for x in df.columns if x not in NOT_FEATURE_COLUMNS]
     return result_list
 
-def fillna_by_Date_mean(df,df_describe,label=-1):
-    feature_col = feature_columns(df)
-    with timer('Fillna by date mean'):
-        for idx in tqdm(range(len(feature_col))):
-            item = feature_col[idx]
-            if(label == -1):
-                df[item] = df.apply(lambda x: df[item][df['date'] == x['date']].mean() if pd.isnull(x[item]) else x[item], axis=1)
+def fillna_by_DateMedian(df,target=-2):
+    date_list = list(set(df['date']))
+    tdf_list = []
+    predictors = [x for x in df.columns if x not in NOT_FEATURE_COLUMNS]
+    with timer('Fillna by DateMedian'):
+        for idx in tqdm(range(len(date_list))):
+            date = date_list[idx]
+            tdf = df[df['date'] == date]
+            if(target == -2):
+                values = tdf[predictors].median().to_dict()
             else:
-                df[item] = df.apply(lambda x: df[item][(df['label']==label) &(df['date'] == x['date'])].mean() if pd.isnull(x[item]) else x[item], axis=1)
-    return df
+                values = tdf[tdf['label']==target][predictors].median().to_dict()
+            tdfn = tdf.fillna(value=values)
+            tdf_list.append(tdfn)
+        result = pd.concat(tdf_list)
+    return result.sort_index()
 
     
 def fillna_by_median(data_set):
