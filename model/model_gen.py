@@ -20,11 +20,20 @@ from sklearn.externals import joblib
 
 model = {}
 
+lgb_params = {'boosting_type': 'gbdt',
+                      'num_leaves': 31,
+                      'max_depth': 50,
+                      'learning_rate': 0.01,
+                      'n_estimators': 2000,
+                      'reg_alpha': 0.1,
+                      'seed': 42,
+                      'nthread': -1}
+
 #model["RandomForest"] = RandomForestClassifier(n_estimators=1000, max_depth=50, n_jobs=-1)
 #model["ExtraTree"] =ExtraTreesClassifier(n_estimators=1000, max_depth=50, n_jobs=-1)
-model["LightGBM"] = LGBMClassifier(n_estimators=1000, max_depth=50)
+model["LightGBM"] = LGBMClassifier(**lgb_params)
 #model["GBDT"] =GradientBoostingClassifier(n_estimators=1000, max_depth=50)
-model["XGBOOST"] =XGBClassifier(n_estimators=1000, max_depth=50,nthread=80)
+#model["XGBOOST"] =XGBClassifier(n_estimators=1000, max_depth=50,nthread=-1)
 
 #Loading Data....
 train_df,test_df = atecml.data.load()
@@ -32,10 +41,14 @@ predictors = [x for x in train_df.columns if x not in atecml.data.NOT_FEATURE_CO
 
 train_df = atecml.data.filter_date(train_df,start_date='2017-09-05',end_date='2017-10-15')
 
+
+train_df = atecml.data.fillna_by_DateMedian(train_df)
+'''
 with atecml.data.timer('PreProcessing: fillna'):
     for idx in tqdm(range(len(predictors))):
         item = predictors[idx]
         train_df[item].fillna(train_df[item].min(), inplace=True)
+'''
 
 def model_train(df, predictors,model_name):
     model_cache_name = './'+model_name+'.model'
@@ -54,7 +67,7 @@ def model_train(df, predictors,model_name):
     return clf
 
 train_model =[]
-for idx in range(0,2):
+for idx in range(0,20):
     for item in model.keys():
         for target in ['Normal','Fraud']:
             train_id = item + '__'+target +'__'+str(idx) 

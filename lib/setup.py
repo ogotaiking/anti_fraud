@@ -7,6 +7,7 @@ setup(
     author ='2y2sp',
     py_modules=['atecml.data',
                 'atecml.fa',
+                'atecml.fs',
                 'atecml.visual',
                ]
 )
